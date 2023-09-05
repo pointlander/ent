@@ -42,14 +42,12 @@ func main() {
 			matrix.Data = append(matrix.Data, a.Measures...)
 			matrix.Data = append(matrix.Data, b.Measures...)
 			entropy := SelfEntropy(matrix, matrix, matrix)
-			sum := 0.0
-			for _, v := range entropy {
-				sum += v
+			diff := entropy[0] - entropy[1]
+			if diff < 0 {
+				diff = -diff
 			}
-			sum = -sum
-			//fmt.Println(i, j, sum)
-			if sum < min {
-				min = sum
+			if diff < min {
+				min = diff
 				c = b
 				index = j
 			}
