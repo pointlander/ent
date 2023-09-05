@@ -5,13 +5,56 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"math"
+	"sort"
 
 	"github.com/pointlander/datum/iris"
 )
 
+// Meta is the meta data analysis mode
+func Meta(datum iris.Datum) {
+	adjacency := NewMatrix(0, len(datum.Fisher), len(datum.Fisher))
+	for _, a := range datum.Fisher {
+		for j := 0; j < len(datum.Fisher); j++ {
+			b := datum.Fisher[j]
+			matrix := NewMatrix(0, 4, 2)
+			matrix.Data = append(matrix.Data, a.Measures...)
+			matrix.Data = append(matrix.Data, b.Measures...)
+			entropy := SelfEntropy(matrix, matrix, matrix)
+			sum := 0.0
+			for _, v := range entropy {
+				sum += v
+			}
+			adjacency.Data = append(adjacency.Data, -sum)
+		}
+	}
+	entropy := SelfEntropy(adjacency, adjacency, adjacency)
+	type Entropy struct {
+		Index int
+		Value float64
+	}
+	entropyList := make([]Entropy, 0, len(entropy))
+	for i, v := range entropy {
+		entropyList = append(entropyList, Entropy{i, v})
+	}
+	sort.Slice(entropyList, func(i, j int) bool {
+		return entropyList[i].Value < entropyList[j].Value
+	})
+	for _, v := range entropyList {
+		fmt.Println(v.Index, v.Value)
+	}
+}
+
+var (
+	// FlagMeta meta mode
+	FlagMeta = flag.Bool("meta", false, "meta mode")
+)
+
 func main() {
+	flag.Parse()
+
 	datum, err := iris.Load()
 	if err != nil {
 		panic(err)
@@ -26,6 +69,12 @@ func main() {
 			datum.Fisher[i].Measures[j] /= sum
 		}
 	}
+
+	if *FlagMeta {
+		Meta(datum)
+		return
+	}
+
 	pairs := make([][]iris.Iris, 0, 8)
 	used := make(map[int]bool)
 	for i, a := range datum.Fisher {
