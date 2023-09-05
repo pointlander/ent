@@ -280,6 +280,16 @@ func softmax(values []float64) {
 	}
 }
 
+// SlowSelfEntropy computes the slowself entropy of Q, K, V
+func SlowSelfEntropy(Q, K, V Matrix) []float64 {
+	E := Entropy(Softmax(Mul(Softmax(Mul(Q, K)), T(V))))
+	results := make([]float64, 0, E.Rows)
+	for i := 0; i < E.Cols; i++ {
+		results = append(results, E.Data[i])
+	}
+	return results
+}
+
 // SelfEntropy computes the self entropy of Q, K, V
 func SelfEntropy(Q, K, V Matrix) []float64 {
 	entropies, values, results := make([]float64, V.Cols), make([]float64, K.Rows), make([]float64, 0, K.Rows)
