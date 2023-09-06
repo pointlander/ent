@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+
+	"github.com/pointlander/pagerank"
 )
 
 const (
@@ -280,9 +282,31 @@ func softmax(values []float64) {
 	}
 }
 
+// PageRank computes the page rank of the adjacency matrix
+func PageRank(m Matrix) Matrix {
+	o := Matrix{
+		Cols: m.Cols,
+		Rows: m.Rows,
+		Data: make([]float64, m.Cols),
+	}
+	graph := pagerank.NewGraph64()
+	for i := 0; i < m.Rows; i++ {
+		for j := 0; j < m.Cols; j++ {
+			graph.Link(uint64(i), uint64(j), m.Data[i*m.Cols+j])
+		}
+	}
+	graph.Rank(0.85, 0.000001, func(node uint64, rank float64) {
+		o.Data[node] = rank
+	})
+	return o
+}
+
 // SlowSelfEntropy computes the slowself entropy of Q, K, V
 func SlowSelfEntropy(Q, K, V Matrix) []float64 {
-	E := Entropy(Softmax(T(Mul(Softmax(Mul(Q, K)), T(V)))))
+	A := Mul(Q, K)
+	R := PageRank(A)
+	A = H(A, R)
+	E := Entropy(Softmax(T(Mul(Softmax(A), T(V)))))
 	results := make([]float64, 0, E.Rows)
 	for i := 0; i < E.Cols; i++ {
 		results = append(results, E.Data[i])

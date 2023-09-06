@@ -104,7 +104,12 @@ func main() {
 		used[index] = true
 		pairs = append(pairs, []iris.Iris{a, c})
 	}
+	correct := 0
 	for i, pair := range pairs {
 		fmt.Println(i, pair[0].Label, pair[1].Label, pair[0].Measures, pair[1].Measures)
+		if pair[0].Label == pair[1].Label {
+			correct++
+		}
 	}
+	fmt.Println("correct", correct, "total", len(pairs), "percent", float64(correct)/float64(len(pairs)))
 }
