@@ -11,6 +11,8 @@ import (
 	"sort"
 
 	"github.com/pointlander/datum/iris"
+	"gonum.org/v1/gonum/mat"
+	"gonum.org/v1/gonum/stat"
 )
 
 // Meta is the meta data analysis mode
@@ -59,6 +61,32 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	values := make([]float64, 0, len(datum.Fisher)*4)
+	for _, embedding := range datum.Fisher {
+		values = append(values, embedding.Measures...)
+	}
+	data := mat.NewDense(len(datum.Fisher), 4, values)
+	rows, cols := data.Dims()
+
+	var pc stat.PC
+	ok := pc.PrincipalComponents(data, nil)
+	if !ok {
+		return
+	}
+
+	k := 4
+	var projection mat.Dense
+	var vector mat.Dense
+	pc.VectorsTo(&vector)
+	projection.Mul(data, vector.Slice(0, cols, 0, k))
+
+	for i := 0; i < rows; i++ {
+		for j := 0; j < k; j++ {
+			datum.Fisher[i].Measures[j] = projection.At(i, j)
+		}
+	}
+
 	for i := range datum.Fisher {
 		sum := 0.0
 		for _, v := range datum.Fisher[i].Measures {
