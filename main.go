@@ -49,9 +49,34 @@ func Meta(datum iris.Datum) {
 	}
 }
 
+// Full process all of the data
+func Full(datum iris.Datum) {
+	matrix := NewMatrix(0, 4, len(datum.Fisher))
+	for _, a := range datum.Fisher {
+		matrix.Data = append(matrix.Data, a.Measures...)
+	}
+	entropy := SelfEntropy(matrix, matrix, matrix)
+	type Entropy struct {
+		Index int
+		Value float64
+	}
+	entropyList := make([]Entropy, 0, len(entropy))
+	for i, v := range entropy {
+		entropyList = append(entropyList, Entropy{i, v})
+	}
+	sort.Slice(entropyList, func(i, j int) bool {
+		return entropyList[i].Value < entropyList[j].Value
+	})
+	for _, v := range entropyList {
+		fmt.Println(datum.Fisher[v.Index].Label, v.Value)
+	}
+}
+
 var (
 	// FlagMeta meta mode
 	FlagMeta = flag.Bool("meta", false, "meta mode")
+	// FlagFull full mode
+	FlagFull = flag.Bool("full", false, "full mode")
 )
 
 func main() {
@@ -100,6 +125,11 @@ func main() {
 
 	if *FlagMeta {
 		Meta(datum)
+		return
+	}
+
+	if *FlagFull {
+		Full(datum)
 		return
 	}
 
