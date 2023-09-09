@@ -11,19 +11,23 @@ import (
 	"sort"
 
 	"github.com/pointlander/datum/iris"
-	"gonum.org/v1/gonum/mat"
-	"gonum.org/v1/gonum/stat"
+)
+
+const (
+	// Width is the width of the vector
+	Width = 4
 )
 
 // Meta is the meta data analysis mode
-func Meta(datum iris.Datum) {
-	adjacency := NewMatrix(0, len(datum.Fisher), len(datum.Fisher))
-	for _, a := range datum.Fisher {
-		for j := 0; j < len(datum.Fisher); j++ {
-			b := datum.Fisher[j]
-			matrix := NewMatrix(0, 4, 2)
-			matrix.Data = append(matrix.Data, a.Measures...)
-			matrix.Data = append(matrix.Data, b.Measures...)
+func Meta(fisher Matrix) {
+	adjacency := NewMatrix(0, fisher.Rows, fisher.Rows)
+	for i := 0; i < fisher.Rows; i++ {
+		a := fisher.Data[i*Width : i*Width+Width]
+		for j := 0; j < fisher.Rows; j++ {
+			b := fisher.Data[j*Width : j*Width+Width]
+			matrix := NewMatrix(0, Width, 2)
+			matrix.Data = append(matrix.Data, a...)
+			matrix.Data = append(matrix.Data, b...)
 			entropy := SelfEntropy(matrix, matrix, matrix)
 			sum := 0.0
 			for _, v := range entropy {
@@ -50,12 +54,8 @@ func Meta(datum iris.Datum) {
 }
 
 // Full process all of the data
-func Full(datum iris.Datum) {
-	matrix := NewMatrix(0, 4, len(datum.Fisher))
-	for _, a := range datum.Fisher {
-		matrix.Data = append(matrix.Data, a.Measures...)
-	}
-	entropy := SelfEntropy(matrix, matrix, matrix)
+func Full(datum iris.Datum, fisher Matrix) {
+	entropy := SelfEntropy(fisher, fisher, fisher)
 	type Entropy struct {
 		Index int
 		Value float64
@@ -87,67 +87,44 @@ func main() {
 		panic(err)
 	}
 
-	values := make([]float64, 0, len(datum.Fisher)*4)
+	fisher := NewMatrix(0, 4, len(datum.Fisher))
 	for _, embedding := range datum.Fisher {
-		values = append(values, embedding.Measures...)
+		fisher.Data = append(fisher.Data, embedding.Measures...)
 	}
-	data := mat.NewDense(len(datum.Fisher), 4, values)
-	rows, cols := data.Dims()
-
-	var pc stat.PC
-	ok := pc.PrincipalComponents(data, nil)
-	if !ok {
-		return
-	}
-
-	k := 4
-	var projection mat.Dense
-	var vector mat.Dense
-	pc.VectorsTo(&vector)
-	projection.Mul(data, vector.Slice(0, cols, 0, k))
-
-	for i := 0; i < rows; i++ {
-		for j := 0; j < k; j++ {
-			datum.Fisher[i].Measures[j] = projection.At(i, j)
-		}
-	}
-
-	for i := range datum.Fisher {
-		sum := 0.0
-		for _, v := range datum.Fisher[i].Measures {
-			sum += v * v
-		}
-		sum = math.Sqrt(sum)
-		for j := range datum.Fisher[i].Measures {
-			datum.Fisher[i].Measures[j] /= sum
-		}
-	}
+	fisher = Normalize(PCA(fisher))
 
 	if *FlagMeta {
-		Meta(datum)
+		Meta(fisher)
 		return
 	}
 
 	if *FlagFull {
-		Full(datum)
+		Full(datum, fisher)
 		return
 	}
 
-	pairs := make([][]iris.Iris, 0, 8)
+	type Pair struct {
+		A, B    []float64
+		SourceA iris.Iris
+		SourceB iris.Iris
+	}
+
+	pairs := make([]Pair, 0, 8)
 	used := make(map[int]bool)
-	for i, a := range datum.Fisher {
+	for i := 0; i < fisher.Rows; i++ {
 		if used[i] {
 			continue
 		}
-		index, c, min := 0, iris.Iris{}, math.MaxFloat64
-		for j := i + 1; j < len(datum.Fisher); j++ {
+		a := fisher.Data[i*Width : i*Width+Width]
+		index, c, min := 0, []float64{}, math.MaxFloat64
+		for j := i + 1; j < fisher.Rows; j++ {
 			if used[j] {
 				continue
 			}
-			b := datum.Fisher[j]
-			matrix := NewMatrix(0, 4, 2)
-			matrix.Data = append(matrix.Data, a.Measures...)
-			matrix.Data = append(matrix.Data, b.Measures...)
+			b := fisher.Data[j*Width : j*Width+Width]
+			matrix := NewMatrix(0, Width, 2)
+			matrix.Data = append(matrix.Data, a...)
+			matrix.Data = append(matrix.Data, b...)
 			entropy := SelfEntropy(matrix, matrix, matrix)
 			diff := entropy[0] - entropy[1]
 			if diff < 0 {
@@ -160,12 +137,17 @@ func main() {
 			}
 		}
 		used[index] = true
-		pairs = append(pairs, []iris.Iris{a, c})
+		pairs = append(pairs, Pair{
+			A:       a,
+			B:       c,
+			SourceA: datum.Fisher[i],
+			SourceB: datum.Fisher[index],
+		})
 	}
 	correct := 0
 	for i, pair := range pairs {
-		fmt.Println(i, pair[0].Label, pair[1].Label, pair[0].Measures, pair[1].Measures)
-		if pair[0].Label == pair[1].Label {
+		fmt.Println(i, pair.SourceA.Label, pair.SourceB.Label, pair.SourceA.Measures, pair.SourceB.Measures)
+		if pair.SourceA.Label == pair.SourceB.Label {
 			correct++
 		}
 	}

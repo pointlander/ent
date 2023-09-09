@@ -10,6 +10,8 @@ import (
 	"math/rand"
 
 	"github.com/pointlander/pagerank"
+	"gonum.org/v1/gonum/mat"
+	"gonum.org/v1/gonum/stat"
 )
 
 const (
@@ -301,6 +303,35 @@ func PageRank(m Matrix) Matrix {
 	return o
 }
 
+// PCA computes the principal component analysis of the matrix
+func PCA(m Matrix) Matrix {
+	o := Matrix{
+		Cols: m.Cols,
+		Rows: m.Rows,
+		Data: make([]float64, 0, m.Cols*m.Rows),
+	}
+	data := mat.NewDense(m.Rows, m.Cols, m.Data)
+	rows, cols := data.Dims()
+
+	var pc stat.PC
+	ok := pc.PrincipalComponents(data, nil)
+	if !ok {
+		panic("failed to compute principal components")
+	}
+
+	var projection mat.Dense
+	var vector mat.Dense
+	pc.VectorsTo(&vector)
+	projection.Mul(data, vector.Slice(0, cols, 0, cols))
+
+	for i := 0; i < rows; i++ {
+		for j := 0; j < cols; j++ {
+			o.Data = append(o.Data, projection.At(i, j))
+		}
+	}
+	return o
+}
+
 // SlowSelfEntropy computes the slowself entropy of Q, K, V
 func SlowSelfEntropy(Q, K, V Matrix) []float64 {
 	A := Mul(Q, K)
@@ -339,4 +370,30 @@ func SelfEntropy(Q, K, V Matrix) []float64 {
 		results = append(results, entropy)
 	}
 	return results
+}
+
+// SelfAttention computes the self attention of Q, K, V
+func SelfAttention(Q, K, V Matrix) Matrix {
+	o := Matrix{
+		Cols: Q.Cols,
+		Rows: Q.Rows,
+		Data: make([]float64, 0, Q.Cols*Q.Rows),
+	}
+	outputs, values := make([]float64, V.Cols), make([]float64, K.Rows)
+	V = T(V)
+	for i := 0; i < K.Rows; i++ {
+		K := K.Data[i*K.Cols : (i+1)*K.Cols]
+		for j := 0; j < Q.Rows; j++ {
+			Q := Q.Data[j*Q.Cols : (j+1)*Q.Cols]
+			values[j] = dot(K, Q)
+		}
+		softmax(values)
+
+		for j := 0; j < V.Rows; j++ {
+			V := V.Data[j*V.Cols : (j+1)*V.Cols]
+			outputs[j] = dot(values, V)
+		}
+		o.Data = append(o.Data, outputs...)
+	}
+	return o
 }
