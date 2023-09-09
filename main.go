@@ -55,20 +55,25 @@ func Meta(fisher Matrix) {
 
 // Full process all of the data
 func Full(datum iris.Datum, fisher Matrix) {
-	entropy := SelfEntropy(fisher, fisher, fisher)
+	for i := 0; i < 1; i++ {
+		fisher = SelfAttention(fisher, fisher, fisher)
+		fisher = Normalize(PCA(fisher))
+	}
+	entropy := fisher //SelfAttention(fisher, fisher, fisher)
 	type Entropy struct {
 		Index int
 		Value float64
 	}
-	entropyList := make([]Entropy, 0, len(entropy))
-	for i, v := range entropy {
-		entropyList = append(entropyList, Entropy{i, v})
+	entropyList := make([]Entropy, 0, len(entropy.Data))
+	for i := 0; i < entropy.Rows; i++ {
+		v := entropy.Data[i*entropy.Cols : i*entropy.Cols+entropy.Cols]
+		entropyList = append(entropyList, Entropy{i, v[0]})
 	}
 	sort.Slice(entropyList, func(i, j int) bool {
 		return entropyList[i].Value < entropyList[j].Value
 	})
 	for _, v := range entropyList {
-		fmt.Println(datum.Fisher[v.Index].Label, v.Value)
+		fmt.Printf("%s %.64f\n", datum.Fisher[v.Index].Label, v.Value)
 	}
 }
 
