@@ -55,11 +55,12 @@ func Meta(fisher Matrix) {
 
 // Full process all of the data
 func Full(datum iris.Datum, fisher Matrix) {
-	for i := 0; i < 1; i++ {
-		fisher = SelfAttention(fisher, fisher, fisher)
+	for i := 0; i < 2; i++ {
+		original := fisher
 		fisher = Normalize(PCA(fisher))
+		fisher = SelfAttention(original, fisher, original)
 	}
-	entropy := fisher //SelfAttention(fisher, fisher, fisher)
+	entropy := Normalize(PCA(fisher)) //SelfAttention(fisher, fisher, fisher)
 	type Entropy struct {
 		Index int
 		Value float64
@@ -96,15 +97,15 @@ func main() {
 	for _, embedding := range datum.Fisher {
 		fisher.Data = append(fisher.Data, embedding.Measures...)
 	}
+	if *FlagFull {
+		Full(datum, fisher)
+		return
+	}
+
 	fisher = Normalize(PCA(fisher))
 
 	if *FlagMeta {
 		Meta(fisher)
-		return
-	}
-
-	if *FlagFull {
-		Full(datum, fisher)
 		return
 	}
 
