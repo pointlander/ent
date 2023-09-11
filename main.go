@@ -10,6 +10,7 @@ import (
 	"math"
 	"sort"
 
+	"github.com/bugra/kmeans"
 	"github.com/pointlander/datum/iris"
 )
 
@@ -78,11 +79,46 @@ func Full(datum iris.Datum, fisher Matrix) {
 	}
 }
 
+// SelfAware is the self aware mode
+func SelfAware(datum iris.Datum, fisher Matrix) {
+	a := Normalize(fisher)
+	b := PCA(Append(a, T(PageRank(Abs(Mul(a, a))))))
+	b = SelfAttention(b, b, b)
+	type Vector struct {
+		Index int
+		Value []float64
+	}
+	vectors := make([]Vector, 0, len(b.Data))
+	for i := 0; i < b.Rows; i++ {
+		v := b.Data[i*b.Cols : i*b.Cols+b.Cols]
+		vectors = append(vectors, Vector{i, v})
+	}
+	sort.Slice(vectors, func(i, j int) bool {
+		return vectors[i].Value[0] < vectors[j].Value[0]
+	})
+	for _, v := range vectors {
+		fmt.Printf("%s %f\n", datum.Fisher[v.Index].Label, v.Value)
+	}
+	rawData := make([][]float64, len(vectors))
+	for i, v := range vectors {
+		rawData[i] = v.Value
+	}
+	clusters, err := kmeans.Kmeans(rawData, 3, kmeans.EuclideanDistance, -1)
+	if err != nil {
+		panic(err)
+	}
+	for i, v := range clusters {
+		fmt.Println(i, v)
+	}
+}
+
 var (
 	// FlagMeta meta mode
 	FlagMeta = flag.Bool("meta", false, "meta mode")
 	// FlagFull full mode
 	FlagFull = flag.Bool("full", false, "full mode")
+	// FlagSelfAware self aware mode
+	FlagSelfAware = flag.Bool("self", false, "self aware mode")
 )
 
 func main() {
@@ -97,8 +133,14 @@ func main() {
 	for _, embedding := range datum.Fisher {
 		fisher.Data = append(fisher.Data, embedding.Measures...)
 	}
+
 	if *FlagFull {
 		Full(datum, fisher)
+		return
+	}
+
+	if *FlagSelfAware {
+		SelfAware(datum, fisher)
 		return
 	}
 

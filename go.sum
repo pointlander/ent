@@ -1,3 +1,5 @@
+github.com/bugra/kmeans v0.0.0-20140831011822-bf06fda928a7 h1:uuvF4zNMbOF5ok46U1JsbYeH5FoWupA0KUET6rlYMWE=
+github.com/bugra/kmeans v0.0.0-20140831011822-bf06fda928a7/go.mod h1:bhH3a2rbaqlTowsTqeSZIiAf0OHSN0/uQeX3TOz5+FA=
 github.com/pointlander/datum/iris v0.0.0-20200802052503-0ee610caba95 h1:K9BmC+t1t+zW2IKR93mcPYbhsijtcsIqwttokvC0g/4=
 github.com/pointlander/datum/iris v0.0.0-20200802052503-0ee610caba95/go.mod h1:zlyed+Td2CpuOq/58UhB8/2grLv71oHWLY2CPscR+2w=
 github.com/pointlander/pagerank v0.0.0-20210619221740-830548a59275 h1:KF7JT+ypSI82OfOEGVdNBM31o5+7NuFuuenR3quajVc=

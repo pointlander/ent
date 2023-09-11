@@ -251,6 +251,19 @@ func Sigmoid(m Matrix) Matrix {
 	return o
 }
 
+// Abs computes the abs of a matrix
+func Abs(m Matrix) Matrix {
+	o := Matrix{
+		Cols: m.Cols,
+		Rows: m.Rows,
+		Data: make([]float64, 0, m.Cols*m.Rows),
+	}
+	for _, value := range m.Data {
+		o.Data = append(o.Data, math.Abs(value))
+	}
+	return o
+}
+
 // T tramsposes a matrix
 func T(m Matrix) Matrix {
 	o := Matrix{
@@ -288,7 +301,7 @@ func softmax(values []float64) {
 func PageRank(m Matrix) Matrix {
 	o := Matrix{
 		Cols: m.Cols,
-		Rows: m.Rows,
+		Rows: 1,
 		Data: make([]float64, m.Cols),
 	}
 	graph := pagerank.NewGraph64()
@@ -370,6 +383,23 @@ func SelfEntropy(Q, K, V Matrix) []float64 {
 		results = append(results, entropy)
 	}
 	return results
+}
+
+// AppendOne appends m and n
+func Append(m, n Matrix) Matrix {
+	if m.Rows != n.Rows {
+		panic(fmt.Errorf("%d != %d", m.Rows, n.Rows))
+	}
+	o := Matrix{
+		Cols: m.Cols + n.Cols,
+		Rows: m.Rows,
+		Data: make([]float64, 0, (m.Cols+n.Cols)*m.Rows),
+	}
+	for i := 0; i < m.Rows; i++ {
+		o.Data = append(o.Data, m.Data[i*m.Cols:i*m.Cols+m.Cols]...)
+		o.Data = append(o.Data, n.Data[i*n.Cols:i*n.Cols+n.Cols]...)
+	}
+	return o
 }
 
 // SelfAttention computes the self attention of Q, K, V
