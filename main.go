@@ -51,11 +51,16 @@ func main() {
 	type Vector struct {
 		Index int
 		Value []float64
+		Label string
 	}
 	vectors := make([]Vector, 0, len(embedded.Data))
 	for i := 0; i < embedded.Rows; i++ {
 		v := embedded.Data[i*embedded.Cols : i*embedded.Cols+embedded.Cols]
-		vectors = append(vectors, Vector{i, v})
+		vectors = append(vectors, Vector{
+			Index: i,
+			Value: v,
+			Label: datum.Fisher[i].Label,
+		})
 	}
 	sort.Slice(vectors, func(i, j int) bool {
 		return vectors[i].Value[0] < vectors[j].Value[0]
@@ -67,11 +72,11 @@ func main() {
 	for i, v := range vectors {
 		rawData[i] = v.Value
 	}
-	clusters, err := kmeans.Kmeans(rawData, 3, kmeans.EuclideanDistance, -1)
+	clusters, err := kmeans.Kmeans(rawData, 3, kmeans.SquaredEuclideanDistance, -1)
 	if err != nil {
 		panic(err)
 	}
 	for i, v := range clusters {
-		fmt.Println(datum.Fisher[i].Label, i, v)
+		fmt.Println(vectors[i].Label, i, v)
 	}
 }
