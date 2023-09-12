@@ -206,8 +206,34 @@ func Normalize(m Matrix) Matrix {
 	return o
 }
 
-// Normalize normalizes a matrix using the mean and standard deviation
+// NormalizeCenter normalizes a matrix using the mean and standard deviation
 func NormalizeCenter(m Matrix) Matrix {
+	size, width := len(m.Data), m.Cols
+	o := Matrix{
+		Cols: m.Cols,
+		Rows: m.Rows,
+		Data: make([]float64, 0, m.Cols*m.Rows),
+	}
+	sum, sumSquared := 0.0, 0.0
+	for i := 0; i < size; i += width {
+		for _, ax := range m.Data[i : i+width] {
+			sum += ax
+			sumSquared += ax * ax
+		}
+	}
+	mean, stddev := 0.0, 0.0
+	mean = sum / float64(m.Rows*m.Cols)
+	stddev = math.Sqrt(sumSquared/float64(m.Rows*m.Cols) - mean*mean)
+	for i := 0; i < size; i += width {
+		for _, ax := range m.Data[i : i+width] {
+			o.Data = append(o.Data, (ax-mean)/stddev)
+		}
+	}
+	return o
+}
+
+// NormalizeCenterPer normalizes a matrix using the mean and standard deviation per vector entry
+func NormalizeCenterPer(m Matrix) Matrix {
 	size, width := len(m.Data), m.Cols
 	o := Matrix{
 		Cols: m.Cols,
