@@ -226,7 +226,6 @@ func NormalizeCenter(m Matrix) Matrix {
 		mean[i] = sum[i] / float64(m.Rows)
 		stddev[i] = math.Sqrt(sumSquared[i]/float64(m.Rows) - mean[i]*mean[i])
 	}
-	fmt.Println(mean, stddev)
 	for i := 0; i < size; i += width {
 		for j, ax := range m.Data[i : i+width] {
 			o.Data = append(o.Data, (ax-mean[j])/stddev[j])
