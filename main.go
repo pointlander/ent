@@ -82,7 +82,8 @@ func Full(datum iris.Datum, fisher Matrix) {
 // SelfAware is the self aware mode
 func SelfAware(datum iris.Datum, fisher Matrix) {
 	a := Normalize(fisher)
-	b := PCA(Append(a, T(PageRank(Abs(Mul(a, a))))))
+	//b := PCA(Append(a, T(PageRank(Abs(Mul(a, a))))))
+	b := PCA(a)
 	b = SelfAttention(b, b, b)
 	type Vector struct {
 		Index int
@@ -108,7 +109,7 @@ func SelfAware(datum iris.Datum, fisher Matrix) {
 		panic(err)
 	}
 	for i, v := range clusters {
-		fmt.Println(i, v)
+		fmt.Println(datum.Fisher[i].Label, i, v)
 	}
 }
 
