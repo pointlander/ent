@@ -206,6 +206,35 @@ func Normalize(m Matrix) Matrix {
 	return o
 }
 
+// Normalize normalizes a matrix using the mean and standard deviation
+func NormalizeCenter(m Matrix) Matrix {
+	size, width := len(m.Data), m.Cols
+	o := Matrix{
+		Cols: m.Cols,
+		Rows: m.Rows,
+		Data: make([]float64, 0, m.Cols*m.Rows),
+	}
+	sum, sumSquared := make([]float64, width), make([]float64, width)
+	for i := 0; i < size; i += width {
+		for j, ax := range m.Data[i : i+width] {
+			sum[j] += ax
+			sumSquared[j] += ax * ax
+		}
+	}
+	mean, stddev := make([]float64, width), make([]float64, width)
+	for i := 0; i < width; i++ {
+		mean[i] = sum[i] / float64(m.Rows)
+		stddev[i] = math.Sqrt(sumSquared[i]/float64(m.Rows) - mean[i]*mean[i])
+	}
+	fmt.Println(mean, stddev)
+	for i := 0; i < size; i += width {
+		for j, ax := range m.Data[i : i+width] {
+			o.Data = append(o.Data, (ax-mean[j])/stddev[j])
+		}
+	}
+	return o
+}
+
 // Entropy is the entropy of the matrix
 func Entropy(m Matrix) Matrix {
 	size, width := len(m.Data), m.Cols
