@@ -7,6 +7,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"math"
 	"math/rand"
 
 	"github.com/bugra/kmeans"
@@ -40,7 +41,7 @@ func main() {
 		fisher := NewMatrix(0, 4, len(datum.Fisher))
 		for _, embedding := range datum.Fisher {
 			for _, measure := range embedding.Measures {
-				fisher.Data = append(fisher.Data, measure+rnd.Float64()*0.1)
+				fisher.Data = append(fisher.Data, math.Abs(measure+rnd.NormFloat64()*0.1))
 			}
 		}
 
