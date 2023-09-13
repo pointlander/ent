@@ -40,7 +40,7 @@ func main() {
 		fisher := NewMatrix(0, 4, len(datum.Fisher))
 		for _, embedding := range datum.Fisher {
 			for _, measure := range embedding.Measures {
-				fisher.Data = append(fisher.Data, measure+rnd.NormFloat64()*0.1)
+				fisher.Data = append(fisher.Data, measure+rnd.Float64()*0.1)
 			}
 		}
 
@@ -94,13 +94,35 @@ func main() {
 		}
 	}
 
-	rawData := make([][]float64, len(sum))
-	for i, v := range sum {
-		for j := range v {
-			rawData[i] = append(rawData[i], float64(v[j]))
+	fisher := NewMatrix(0, 150, len(datum.Fisher))
+	for _, embedding := range sum {
+		for _, measure := range embedding {
+			fisher.Data = append(fisher.Data, float64(measure))
 		}
 	}
-	clusters, err := kmeans.Kmeans(rawData, 3, kmeans.EuclideanDistance, -1)
+
+	units := Normalize(fisher)
+	projected := PCA(units)
+	embedded := SelfAttention(projected, projected, projected)
+
+	type Vector struct {
+		Index int
+		Value []float64
+	}
+	vectors := make([]Vector, 0, len(embedded.Data))
+	for i := 0; i < embedded.Rows; i++ {
+		v := embedded.Data[i*embedded.Cols : i*embedded.Cols+embedded.Cols]
+		vectors = append(vectors, Vector{
+			Index: i,
+			Value: v,
+		})
+	}
+
+	rawData := make([][]float64, len(vectors))
+	for i, v := range vectors {
+		rawData[i] = v.Value
+	}
+	clusters, err := kmeans.Kmeans(rawData, 3, kmeans.SquaredEuclideanDistance, -1)
 	if err != nil {
 		panic(err)
 	}
