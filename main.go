@@ -7,8 +7,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"math"
-	"math/rand"
 
 	"github.com/pointlander/datum/iris"
 	"github.com/pointlander/kmeans"
@@ -20,18 +18,16 @@ func MNIST() {
 
 // Sample samples the embedding function for the iris data set
 func Sample() {
-	rnd := rand.New(rand.NewSource(1))
-
 	datum, err := iris.Load()
 	if err != nil {
 		panic(err)
 	}
 
-	sample := func() (x [150][]int) {
+	sample := func(rngSeed int64) (x [150][]int) {
 		fisher := NewMatrix(0, 4, len(datum.Fisher))
 		for _, embedding := range datum.Fisher {
 			for _, measure := range embedding.Measures {
-				fisher.Data = append(fisher.Data, math.Abs(measure+rnd.NormFloat64()*0.1))
+				fisher.Data = append(fisher.Data /*math.Abs(measure+rnd.NormFloat64()*0.1)*/, measure)
 			}
 		}
 
@@ -56,7 +52,7 @@ func Sample() {
 		for i, v := range vectors {
 			rawData[i] = v.Value
 		}
-		clusters, _, err := kmeans.Kmeans(rawData, 3, kmeans.SquaredEuclideanDistance, -1)
+		clusters, _, err := kmeans.Kmeans(rngSeed, rawData, 3, kmeans.SquaredEuclideanDistance, -1)
 		if err != nil {
 			panic(err)
 		}
@@ -77,7 +73,7 @@ func Sample() {
 		sum[i] = make([]int, 150)
 	}
 	for i := 0; i < 100; i++ {
-		x := sample()
+		x := sample(int64(i) + 1)
 		for i := range sum {
 			for j := range sum[i] {
 				sum[i][j] += x[i][j]
@@ -113,7 +109,7 @@ func Sample() {
 	for i, v := range vectors {
 		rawData[i] = v.Value
 	}
-	clusters, _, err := kmeans.Kmeans(rawData, 3, kmeans.SquaredEuclideanDistance, -1)
+	clusters, _, err := kmeans.Kmeans(1, rawData, 3, kmeans.SquaredEuclideanDistance, -1)
 	if err != nil {
 		panic(err)
 	}
@@ -179,8 +175,7 @@ func main() {
 	for i, v := range vectors {
 		rawData[i] = v.Value
 	}
-	rand.Seed(3)
-	clusters, _, err := kmeans.Kmeans(rawData, 3, kmeans.SquaredEuclideanDistance, -1)
+	clusters, _, err := kmeans.Kmeans(3, rawData, 3, kmeans.SquaredEuclideanDistance, -1)
 	if err != nil {
 		panic(err)
 	}
