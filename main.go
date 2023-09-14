@@ -9,10 +9,9 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
-	"sort"
 
-	"github.com/bugra/kmeans"
 	"github.com/pointlander/datum/iris"
+	"github.com/pointlander/kmeans"
 )
 
 // MNIST cluster the MNIST data set
@@ -57,7 +56,7 @@ func Sample() {
 		for i, v := range vectors {
 			rawData[i] = v.Value
 		}
-		clusters, err := kmeans.Kmeans(rawData, 3, kmeans.SquaredEuclideanDistance, -1)
+		clusters, _, err := kmeans.Kmeans(rawData, 3, kmeans.SquaredEuclideanDistance, -1)
 		if err != nil {
 			panic(err)
 		}
@@ -114,7 +113,7 @@ func Sample() {
 	for i, v := range vectors {
 		rawData[i] = v.Value
 	}
-	clusters, err := kmeans.Kmeans(rawData, 3, kmeans.SquaredEuclideanDistance, -1)
+	clusters, _, err := kmeans.Kmeans(rawData, 3, kmeans.SquaredEuclideanDistance, -1)
 	if err != nil {
 		panic(err)
 	}
@@ -170,17 +169,18 @@ func main() {
 			Label: datum.Fisher[i].Label,
 		})
 	}
-	sort.Slice(vectors, func(i, j int) bool {
+	/*sort.Slice(vectors, func(i, j int) bool {
 		return vectors[i].Value[0] < vectors[j].Value[0]
 	})
 	for _, v := range vectors {
 		fmt.Printf("%s %f\n", datum.Fisher[v.Index].Label, v.Value)
-	}
+	}*/
 	rawData := make([][]float64, len(vectors))
 	for i, v := range vectors {
 		rawData[i] = v.Value
 	}
-	clusters, err := kmeans.Kmeans(rawData, 3, kmeans.SquaredEuclideanDistance, -1)
+	rand.Seed(3)
+	clusters, _, err := kmeans.Kmeans(rawData, 3, kmeans.SquaredEuclideanDistance, -1)
 	if err != nil {
 		panic(err)
 	}
