@@ -26,9 +26,7 @@ func Sample() {
 	sample := func(rngSeed int64) (x [150][]int) {
 		fisher := NewMatrix(0, 4, len(datum.Fisher))
 		for _, embedding := range datum.Fisher {
-			for _, measure := range embedding.Measures {
-				fisher.Data = append(fisher.Data /*math.Abs(measure+rnd.NormFloat64()*0.1)*/, measure)
-			}
+			fisher.Data = append(fisher.Data, embedding.Measures...)
 		}
 
 		units := Normalize(fisher)
