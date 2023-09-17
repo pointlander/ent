@@ -7,6 +7,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"math"
 
 	"github.com/pointlander/datum/iris"
 	"github.com/pointlander/kmeans"
@@ -29,9 +30,8 @@ func Single() {
 	}
 
 	units := Normalize(fisher)
-	// PCA(NormalizeCenterPer(fisher))
-	projected := SelfAttention(units, units, units)
-	embedded := projected
+	projected := PCA(units)
+	embedded := SelfAttention(projected, projected, projected)
 	type Vector struct {
 		Index int
 		Value []float64
@@ -79,10 +79,8 @@ func Sample() {
 		}
 
 		units := Normalize(fisher)
-		pca := PCA(NormalizeCenterPer(fisher))
-		projected := SelfAttention(units, units, units)
-		embedded := Append(projected, pca)
-		embedded = SelfAttention(embedded, embedded, embedded)
+		projected := PCA(units)
+		embedded := SelfAttention(projected, projected, projected)
 
 		type Vector struct {
 			Index int
@@ -137,9 +135,9 @@ func Sample() {
 		}
 	}
 
-	//units := Normalize(fisher)
-	//projected := PCA(units)
-	embedded := fisher //SelfAttention(projected, projected, projected)
+	units := Normalize(fisher)
+	projected := PCA(units)
+	embedded := SelfAttention(projected, projected, projected)
 
 	type Vector struct {
 		Index int
@@ -192,5 +190,63 @@ func main() {
 	if *FlagSample {
 		Sample()
 		return
+	}
+
+	datum, err := iris.Load()
+	if err != nil {
+		panic(err)
+	}
+
+	fisher := NewMatrix(0, len(datum.Fisher), len(datum.Fisher))
+	for _, a := range datum.Fisher {
+		for _, b := range datum.Fisher {
+			sum := 0.0
+			for i, value := range a.Measures {
+				diff := value - b.Measures[i]
+				sum += diff * diff
+			}
+			fisher.Data = append(fisher.Data, math.Sqrt(sum))
+		}
+	}
+
+	units := Normalize(fisher)
+	projected := units //PCA(units)
+	embedding := SelfEntropy(projected, projected, projected)
+
+	type Vector struct {
+		Position []float64
+		Value    float64
+		Label    string
+		G        []float64
+	}
+	vectors := make([]Vector, 0, len(embedding))
+	for i, v := range embedding {
+		vectors = append(vectors, Vector{
+			Label:    datum.Fisher[i].Label,
+			Position: datum.Fisher[i].Measures,
+			Value:    -v,
+		})
+	}
+	for i := range vectors {
+		for j := range vectors {
+			d := 0.0
+			for i, value := range vectors[i].Position {
+				diff := value - vectors[j].Position[i]
+				d += diff * diff
+			}
+			vectors[i].G = append(vectors[i].G, d/(vectors[i].Value*vectors[j].Value))
+		}
+	}
+
+	rawData := make([][]float64, len(vectors))
+	for i, v := range vectors {
+		rawData[i] = v.G
+	}
+	clusters, _, err := kmeans.Kmeans(4, rawData, 3, kmeans.SquaredEuclideanDistance, -1)
+	if err != nil {
+		panic(err)
+	}
+	for i, v := range clusters {
+		fmt.Println(vectors[i].Label, i, v)
 	}
 }
