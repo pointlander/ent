@@ -205,10 +205,12 @@ func main() {
 				diff := value - b.Measures[i]
 				sum += diff * diff
 			}
-			fisher.Data = append(fisher.Data, math.Sqrt(sum))
+			if sum == 0.0 {
+				sum = 1.0
+			}
+			fisher.Data = append(fisher.Data, 1/math.Sqrt(sum))
 		}
 	}
-
 	units := Normalize(fisher)
 	projected := units //PCA(units)
 	embedding := SelfEntropy(projected, projected, projected)
@@ -221,6 +223,7 @@ func main() {
 	}
 	vectors := make([]Vector, 0, len(embedding))
 	for i, v := range embedding {
+		fmt.Println(datum.Fisher[i].Label, -v)
 		vectors = append(vectors, Vector{
 			Label:    datum.Fisher[i].Label,
 			Position: datum.Fisher[i].Measures,
@@ -229,12 +232,15 @@ func main() {
 	}
 	for i := range vectors {
 		for j := range vectors {
-			d := 0.0
+			/*d := 0.0
 			for i, value := range vectors[i].Position {
 				diff := value - vectors[j].Position[i]
 				d += diff * diff
 			}
-			vectors[i].G = append(vectors[i].G, d/(vectors[i].Value*vectors[j].Value))
+			if d == 0.0 {
+				d = 1.0
+			}*/
+			vectors[i].G = append(vectors[i].G, vectors[i].Value*vectors[j].Value)
 		}
 	}
 
